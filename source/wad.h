@@ -45,10 +45,20 @@ typedef struct {
     waddirectory_st *directorys;
 } wad_st;
 
+/*Read/Write WAD file*/
 wad_st* wad_open(const char *_path);
+
+/*Clode WAD file*/
 void wad_close(wad_st * const _self);
+
+/*Print directorys of WAD file*/
 void wad_debug(wad_st * const _self);
+
+/*Insert directory and lump at certain index to WAD file*/
 void wad_insert(wad_st * const _self, const uint32_t _index, const char *_name, const char *_data, const size_t _size);
+
+/*Delete directory and lump at certain index to WAD file*/
+void wad_erase(wad_st * const _self, const uint32_t _index);
 
 #ifdef __cplusplus
 }

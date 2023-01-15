@@ -30,6 +30,8 @@ void testOpen() {
 
 void testInsert() {
     uint32_t i;
+    wad_st *wad;
+
     typedef struct {
         int16_t x;
         int16_t y;
@@ -42,8 +44,6 @@ void testInsert() {
         {255,255}
     };
 
-    wad_st *wad;
-
     wad = wad_open("MAP00.WAD");
     wad_insert(wad, 0, "idk", vex, sizeof(vex_st) * 4);
     
@@ -55,6 +55,20 @@ void testInsert() {
     printf("\r\n%s \t\t\t---> OK\r\n", "testInsert()");
 }
 
+void testErase() {
+    uint32_t i;
+    wad_st *wad;
+
+    wad = wad_open("MAP00.WAD");
+
+    for(i = 0;i < 20;i++) {
+        wad_erase(wad, 0);
+    }
+
+    wad_close(wad);
+    printf("\r\n%s \t\t\t---> OK\r\n", "testErase()");
+}
+
 int main(int _argc,char** _argv) {
     argc = _argc;
     argv = _argv;
@@ -62,6 +76,7 @@ int main(int _argc,char** _argv) {
     testHello();
     testOpen();
     testInsert();
+    testErase();
 
     printf("\r\nALL TEST SUCCESS\r\n");
     return 0;
