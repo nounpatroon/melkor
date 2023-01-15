@@ -6,7 +6,6 @@ compile:
 	$(CC) $(CFLAGS) $(SRC)
 
 run: compile
-	cls
 	.\a.exe "Hello world!" Bye world!
 
 .DEFAULT_GOAL := run

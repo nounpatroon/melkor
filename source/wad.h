@@ -1,3 +1,20 @@
+/*
+Copyright (C) 2023  Juan Carlos Peña Gonzalez
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+DESCRIPTION:
+    WAD in C89
+*/
+
 #ifndef __wad_h__
 #define __wad_h__
 
@@ -29,7 +46,9 @@ typedef struct {
 } wad_st;
 
 wad_st* wad_open(const char *_path);
-void wad_close(wad_st *_self);
+void wad_close(wad_st * const _self);
+void wad_debug(wad_st * const _self);
+void wad_insert(wad_st * const _self, const uint32_t _index, const char *_name, const char *_data, const size_t _size);
 
 #ifdef __cplusplus
 }
