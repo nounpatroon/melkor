@@ -20,6 +20,8 @@ DESCRIPTION:
 
 #include "wad.h"
 
+#define LIBMELKOR_NAME "Melkor"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
