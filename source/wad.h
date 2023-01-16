@@ -46,7 +46,7 @@ typedef struct {
 } wad_st;
 
 /*Read/Write WAD file*/
-wad_st* wad_open(const char *_path);
+void wad_open(wad_st * _self, const char *_path);
 
 /*Clode WAD file*/
 void wad_close(wad_st * const _self);

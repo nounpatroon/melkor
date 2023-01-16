@@ -44,38 +44,31 @@ size_t _wad_index_lump(wad_st * const _self, const uint32_t _index) {
     return _self->directorys[_index].filepos - sizeof(wadheader_st);
 }
 
-wad_st* wad_open(const char *_path) {
-    wad_st *self;
+void wad_open(wad_st *_self, const char *_path) {
+    _self->filepath = strdup(_path);
+    _self->header = (wadheader_st*)malloc(sizeof(wadheader_st));
+    _self->lumps = (char*)malloc(sizeof(char));
+    _self->directorys = (waddirectory_st*)malloc(sizeof(waddirectory_st));
 
-    self = (wad_st*)malloc(sizeof(wad_st));
-    memset(self, 0, sizeof(wad_st));
+    _self->file = fopen(_path, "rb+");
+    if(_self->file == NULL) {
+        _self->file = fopen(_path, "wb+");
 
-    self->filepath = strdup(_path);
-    self->header = (wadheader_st*)malloc(sizeof(wadheader_st));
-    self->lumps = (char*)malloc(sizeof(char));
-    self->directorys = (waddirectory_st*)malloc(sizeof(waddirectory_st));
+        strcpy(_self->header->identification, "PWAD");
+        _self->header->infotableofs = sizeof(wadheader_st);
+        _self->header->numlumps = 0;
 
-    self->file = fopen(_path, "rb+");
-    if(self->file == NULL) {
-        self->file = fopen(_path, "wb+");
-
-        strcpy(self->header->identification, "PWAD");
-        self->header->infotableofs = sizeof(wadheader_st);
-        self->header->numlumps = 0;
-
-        fwrite(self->header, sizeof(wadheader_st), 1, self->file);
+        fwrite(_self->header, sizeof(wadheader_st), 1, _self->file);
     } else {
-        fseek(self->file, 0, SEEK_SET);
-        fread(self->header, sizeof(wadheader_st), 1, self->file);
+        fseek(_self->file, 0, SEEK_SET);
+        fread(_self->header, sizeof(wadheader_st), 1, _self->file);
 
-        self->lumps = _wad_realloc(self->lumps, sizeof(char), self->header->infotableofs - sizeof(wadheader_st));
-        fread(self->lumps, self->header->infotableofs - sizeof(wadheader_st), 1, self->file);
+        _self->lumps = _wad_realloc(_self->lumps, sizeof(char), _self->header->infotableofs - sizeof(wadheader_st));
+        fread(_self->lumps, _self->header->infotableofs - sizeof(wadheader_st), 1, _self->file);
 
-        self->directorys = (waddirectory_st*)_wad_realloc((char*)self->directorys, sizeof(waddirectory_st), sizeof(waddirectory_st) * self->header->numlumps);
-        fread(self->directorys, sizeof(waddirectory_st), self->header->numlumps, self->file);
+        _self->directorys = (waddirectory_st*)_wad_realloc((char*)_self->directorys, sizeof(waddirectory_st), sizeof(waddirectory_st) * _self->header->numlumps);
+        fread(_self->directorys, sizeof(waddirectory_st), _self->header->numlumps, _self->file);
     }
-
-    return self;
 }
 
 void wad_close(wad_st * const _self) {
@@ -85,7 +78,6 @@ void wad_close(wad_st * const _self) {
     free(_self->header);
     free(_self->lumps);
     free(_self->directorys);
-    free(_self);
 }
 
 void wad_debug(wad_st * const _self) {
@@ -171,7 +163,7 @@ void wad_erase(wad_st * const _self, const uint32_t _index) {
         &_self->directorys[_index + 1],\
         ((_self->header->numlumps) - _index) * sizeof(waddirectory_st)\
     );
-    _self->directorys = (char*)realloc(_self->directorys,  (sizeof(waddirectory_st) * _self->header->numlumps) - sizeof(waddirectory_st));
+    _self->directorys = (waddirectory_st*)realloc(_self->directorys,  (sizeof(waddirectory_st) * _self->header->numlumps) - sizeof(waddirectory_st));
     for(i = _index;i < (_self->header->numlumps-1);i++) {
         if(i == 0) {
             _self->directorys[i].filepos = 12;

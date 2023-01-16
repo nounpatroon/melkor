@@ -1,3 +1,10 @@
+# CMakeFiles
+CMakeFiles 
+*.cmake 
+*.txt
+Makefile
+!CMakeLists.txt
+
 # Other
 .vscode
 *.wad
