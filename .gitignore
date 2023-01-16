@@ -10,6 +10,8 @@ Makefile
 *.wad
 *.WAD
 *.bak
+main.c
+main.lua
 
 # Prerequisites
 *.d

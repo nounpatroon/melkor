@@ -49,11 +49,19 @@ int lua_libmelkor__new(lua_State *L) {
     wad = (wad_st*)lua_newuserdata(L, sizeof(wad_st*));
     wad_open(wad, path);
 
+    lua_libmelkor_debug(L);
+
     lua_newtable(L);
     lua_pushstring(L, "__index");
     lua_pushcfunction(L, lua_libmelkor__index);
     lua_rawset(L, 2);
     lua_setmetatable(L, 1);
+    /*
+    4 -- (-1) ---- function
+    3 -- (-2) ---- `__index'
+    2 -- (-3) ---- table
+    1 -- (-4) ---- userdata
+    */
 
     free(path);
     return 1;
