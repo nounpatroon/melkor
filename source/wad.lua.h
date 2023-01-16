@@ -18,16 +18,16 @@ DESCRIPTION:
 #ifndef __wad_lua_h__
 #define __wad_lua_h__
 
-#include <lua.h>
-#include <lauxlib.h>
-
 #include "wad.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
 
-int luaopen_wad(lua_State *L);
+#include <lua.h>
+#include <lauxlib.h>
+
+int luaopen_libmelkor(lua_State *L);
 
 #ifdef __cplusplus
 }

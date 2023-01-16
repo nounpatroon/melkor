@@ -22,57 +22,24 @@ DESCRIPTION:
 #include "wad.h"
 #include "wad.lua.h"
 
-int lua_libmelkor_debug(lua_State *L);
-int lua_libmelkor_open(lua_State *L);
-int lua_libmelkor_close(lua_State *L);
+int libmelkor_lua_debug(lua_State *L);
+int libmelkor_lua_open(lua_State *L);
+int libmelkor_lua_close(lua_State *L);
 
-int lua_libmelkor__new(lua_State *L);
-int lua_libmelkor__index(lua_State *L);
+int libmelkor_lua__index(lua_State *L);
 
-const luaL_reg lua_libmelkor_register[] = {
-    {"open", lua_libmelkor_open},
-    {"close", lua_libmelkor_close},
-    {"debug", lua_libmelkor_debug},
+const luaL_reg libmelkor_lua_register[] = {
+    {"open", libmelkor_lua_open},
+    {"close", libmelkor_lua_close},
     {NULL, NULL}
 };
 
-int lua_libmelkor__new(lua_State *L) {
-    wad_st *wad;
-    char *path;
+int libmelkor_lua__index(lua_State *L) {
+    wad_st *wad; 
+    char *k; 
 
-    path = strdup(luaL_checkstring(L, 1));
-
-    /*Cleans stack*/
-    lua_settop(L, 0);
-
-    /*Alloc object*/
-    wad = (wad_st*)lua_newuserdata(L, sizeof(wad_st*));
-    wad_open(wad, path);
-
-    lua_libmelkor_debug(L);
-
-    lua_newtable(L);
-    lua_pushstring(L, "__index");
-    lua_pushcfunction(L, lua_libmelkor__index);
-    lua_rawset(L, 2);
-    lua_setmetatable(L, 1);
-    /*
-    4 -- (-1) ---- function
-    3 -- (-2) ---- `__index'
-    2 -- (-3) ---- table
-    1 -- (-4) ---- userdata
-    */
-
-    free(path);
-    return 1;
-}
-
-int lua_libmelkor__index(lua_State *L) {
-    wad_st *wad;
-    char *k;
-
-    wad = (wad_st*)lua_touserdata(L, 1);
-    k = strdup(lua_tostring(L, 2));
+    wad = (wad_st*)lua_touserdata(L, -2);
+    k = strdup(lua_tostring(L, -1));
 
     if(!strcmp(k, "identification")) {
         lua_pushstring(L, wad->header->identification);
@@ -85,23 +52,52 @@ int lua_libmelkor__index(lua_State *L) {
     }
 
     free(k);
+    return 1;
+}
+
+int libmelkor_lua_open(lua_State *L) {
+    wad_st *wad;
+    int type;
+
+    type = lua_type(L, 1);
+    luaL_argcheck(L, type == LUA_TSTRING, 1, "`string' expected");
+
+    const char* path = luaL_checkstring(L, 1);
+
+    /*Clean the stack*/
+    lua_settop(L, 0);
+
+    wad = (wad_st*)lua_newuserdata(L, sizeof(wad_st));
+    wad_open(wad, path);
+
+    /*Set the __index metatable*/
+    lua_newtable(L);
+    lua_pushstring(L, "__index");
+    lua_pushcfunction(L, libmelkor_lua__index);
+    lua_rawset(L, -3);
+    lua_setmetatable(L, -2);       
 
     return 1;
 }
 
-int lua_libmelkor_open(lua_State *L) {
-    printf("Hello from open!\r\n");
+int libmelkor_lua_close(lua_State *L) {
+    wad_st *wad;
+    int type;
+    char *stype;
 
+    type = lua_type(L, -1);
+    stype = strdup(lua_typename(L, type));
+    luaL_argcheck(L, !strcmp(stype, "userdata"), 1, "`userdata' expected");
+
+    wad = (wad_st*) lua_touserdata(L, -1);
+
+    wad_close(wad);
+
+    free(stype);
     return 0;
 }
 
-int lua_libmelkor_close(lua_State *L) {
-    printf("Hello from close!\r\n");
-
-    return 0;
-}
-
-int lua_libmelkor_debug(lua_State *L) {
+int libmelkor_lua_debug(lua_State *L) {
     int i,t,top;
 
     top = lua_gettop(L);
@@ -113,19 +109,19 @@ int lua_libmelkor_debug(lua_State *L) {
         switch (t)
         {
         case LUA_TSTRING:
-            printf("%i -- (%i) ---- `%s'", i, i - (top + 1), lua_tostring(L, i));
+            printf("%i -- (%i) ---- string `%s'", i, i - (top + 1), lua_tostring(L, i));
             break;
 
         case LUA_TBOOLEAN:
-            printf("%i -- (%i) ---- %s", i, i - (top + 1), lua_toboolean(L, i) ? "true" : "false");
+            printf("%i -- (%i) ---- boolean %s", i, i - (top + 1), lua_toboolean(L, i) ? "true" : "false");
             break;
 
         case LUA_TNUMBER:
-            printf("%i -- (%i) ---- %g", i, i - (top + 1), lua_tonumber(L, i));
+            printf("%i -- (%i) ---- number %g", i, i - (top + 1), lua_tonumber(L, i));
             break;
 
         default:
-            printf("%i -- (%i) ---- %s", i, i - (top + 1), lua_typename(L, t));
+            printf("%i -- (%i) ----        '%s'", i, i - (top + 1), lua_typename(L, t));
             break;
         }
         printf("\r\n");
@@ -136,7 +132,7 @@ int lua_libmelkor_debug(lua_State *L) {
 }
 
 int luaopen_libmelkor(lua_State *L) {
-    lua_pushcfunction(L, lua_libmelkor__new);
+    luaL_register(L, "melkor", libmelkor_lua_register);
 
     return 1;
 }
