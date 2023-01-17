@@ -47,7 +47,7 @@ void wad_c::open(const char *path) {
     m_filepath->assign(path);
     
     if(m_file->fail()) {
-        std::ofstream { path };
+        fclose(fopen(path, "wb+"));
         m_file->open(path, std::ios::in | std::ios::out | std::ios::binary);
 
         snprintf(m_header->identification, 5, "%s", "PWAD");
@@ -79,22 +79,6 @@ void wad_c::open(const char *path) {
     }
 
     m_file->close();
-}
-
-void wad_c::push_back(const char *name, void *data, size_t size) {
-    insert(m_header->numlumps, name, data, size);
-}
-
-void wad_c::push_front(const char *name, void *data, size_t size) {
-    insert(0, name, data, size);
-}
-
-void wad_c::pop_back() {
-    erase(m_header->numlumps-1);
-}
-
-void wad_c::pop_front() {
-    erase(0);
 }
 
 void wad_c::copyfile(const char *from, const char *to) {
@@ -226,13 +210,13 @@ void wad_c::erase(uint32_t index) {
     remove(".s4d3dhayuwjsw.tmp");
 }
 
-void wad_c::set_id(int mode) {
+void wad_c::set_id(const char *mode) {
     m_file->open(m_filepath->c_str(), std::ios::in | std::ios::out | std::ios::binary);
     
-    if(mode == IWAD) {
+    if(!strcmp(mode, "IWAD")) {
         snprintf(m_header->identification, 5, "%s", "IWAD");
     }
-    else if(mode == PWAD) {
+    else if(!strcmp(mode, "PWAD")) {
         snprintf(m_header->identification, 5, "%s", "PWAD");
     }
     else {
@@ -243,4 +227,8 @@ void wad_c::set_id(int mode) {
     m_file->write((char*)m_header, sizeof(wadinfo_t));
 
     m_file->close();
+}
+
+const char* wad_c::get_id() {
+    return m_header->identification;
 }

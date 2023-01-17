@@ -6,11 +6,12 @@ Makefile
 !CMakeLists.txt
 
 # Other
+build/
 .vscode
 *.wad
 *.WAD
 *.bak
-main.c
+main.cc
 main.lua
 
 # Prerequisites

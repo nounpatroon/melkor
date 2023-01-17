@@ -39,17 +39,11 @@ public:
     char* get_name(uint32_t index);
     uint32_t get_size(uint32_t index);
 
-    void set_id(int mode);
+    void set_id(const char *mode);
+    const char* get_id();
 
     void insert(uint32_t index, const char* name, void *data, size_t size);
     void erase(uint32_t index);
-    void push_back(const char *name, void *data, size_t size);
-    void push_front(const char *name, void *data, size_t size);
-    void pop_back();
-    void pop_front();
-
-    uint8_t IWAD = 0x1;
-    uint8_t PWAD = 0x2;
 
 private:
     typedef struct {

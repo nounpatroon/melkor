@@ -10,10 +10,10 @@ project(melkor VERSION 1.0.0 DESCRIPTION "C/Lua WAD Library")
 
 # Declare the library target.
 add_library(${PROJECT_NAME} SHARED
-    wad.c
-    wad.h
-    wad.lua.c
-    wad.lua.h
+    wad.cc
+    wad.hh
+    wad.lua.cc
+    wad.lua.hh
 )
 
 # Configure the directories to search for header files.
