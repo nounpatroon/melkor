@@ -27,6 +27,8 @@ DESCRIPTION:
 #include <string>
 #include <cstdint>
 
+extern "C" {
+
 class wad_c {
 public:
     wad_c();
@@ -66,5 +68,7 @@ private:
     std::vector<void*> *m_lump;
     std::vector<filelump_t> *m_directory;
 };
+
+}
 
 #endif /*__w_wad_hh__*/

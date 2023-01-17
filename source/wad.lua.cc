@@ -20,8 +20,6 @@ DESCRIPTION:
 */
 
 #include <iostream>
-#include <string>
-#include <sstream>
 #include <cstring>
 #include <lua.hpp>
 
@@ -34,6 +32,8 @@ int libmelkor_lua_open(lua_State *L);
 int libmelkor_lua_insert(lua_State *L);
 /*erase(index)*/
 int libmelkor_lua_erase(lua_State *L);
+/*export(index, filepath)*/
+int libmelkor_lua_export(lua_State *L);
 int libmelkor_lua_debug(lua_State *L);
 
 int libmelkor_lua__constructor(lua_State *L);
@@ -93,19 +93,30 @@ int libmelkor_lua_insert(lua_State *L) {
     name = (char*) luaL_checkstring(L, 3);
     filepath = (char*) luaL_checkstring(L, 4);
 
-    if(!strcmp(filepath, "empty")) {
+    if(!strcmp(filepath, " ")) {
         (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->insert(index, name, 0, 0);
     }
     else {
-        std::ifstream file(filepath);
-        if(file.is_open()) {
-            std::stringstream buffer;
-            buffer << file.rdbuf();
+        FILE *file = fopen(filepath, "rb+");
+        char *data;
+        size_t filelenght;
 
-            void *data = (void*) buffer.str().c_str();
-            size_t size = (size_t) buffer.str().size();
+        if(file != NULL) {
+            fseek(file, 0, SEEK_END);
+            filelenght = ftell(file);
+            fseek(file, 0, SEEK_SET);
 
-            (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->insert(index, name, data, size);
+            data = (char*)malloc(filelenght+1);
+            data[filelenght] = '\0';
+            for(size_t i = 0;i < filelenght;i++) {
+                data[i] = fgetc(file);
+            }
+
+            (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->insert(index, name, data, strlen(data)+1);
+        }
+        else {
+            
+            return 0;
         }
     }
 
@@ -144,15 +155,64 @@ int libmelkor_lua_erase(lua_State *L) {
 
     // Update numlumps
     luaL_getmetatable(L, LIBMELKOR_NAME);
-    if((*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total() != 0) {
-        lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total() - 1); lua_setfield(L, -2, "numlumps");
-    }
 
     (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->erase(index);
+    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total()); lua_setfield(L, -2, "numlumps");
+    
+    /*Add metatable to userdata*/
+    lua_setmetatable(L, 1);
+
+    return 0;
+}
+
+int libmelkor_lua_export(lua_State *L) {
+    uint32_t index;
+    char *filepath;
+
+    FILE *file;
+    char *data;
+    size_t filelenght;
+    size_t i;
+
+    int type;
+
+    /*Handling errors*/
+    if(lua_gettop(L) != 2+1) {
+        return luaL_error(L, "too fee/many arguments to export(index, filepath)");
+    }
+
+    type = lua_type(L, 2);
+    luaL_argcheck(L, type == LUA_TNUMBER, 2, "`number' expected");
+    type = lua_type(L, 3);
+    luaL_argcheck(L, type == LUA_TSTRING, 3, "`string' expected");
+
+    /*Save arguments*/
+    index = (uint32_t) luaL_checkint(L, 2);
+    filepath = (char*) luaL_checkstring(L, 3);
+
+    /*Remove the last arguments*/
+    lua_settop(L, 1);
+
+    // Get table
+    luaL_getmetatable(L, LIBMELKOR_NAME);
+
+    /*
+    Crear el archivo
+    Obtener datos
+    escribir datos
+    */
+    file = fopen(filepath, "wb+");
+
+    data = (char*)malloc( (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_size(index) );
+    data = (char*)(*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_data(index);
+
+    fwrite(data, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_size(index), 1, file);
 
     /*Add metatable to userdata*/
     lua_setmetatable(L, 1);
 
+    fclose(file);
+    free(data);
     return 0;
 }
 
@@ -207,6 +267,7 @@ int libmelkor_lua__constructor(lua_State *L) {
     lua_pushcfunction(L, libmelkor_lua_open); lua_setfield(L, -2, "open");
     lua_pushcfunction(L, libmelkor_lua_erase); lua_setfield(L, -2, "erase");
     lua_pushcfunction(L, libmelkor_lua_insert); lua_setfield(L, -2, "insert");
+    lua_pushcfunction(L, libmelkor_lua_export); lua_setfield(L, -2, "export");
 
     // Add variables
     lua_pushstring(L, "PWAD"); lua_setfield(L, -2, "identification");
