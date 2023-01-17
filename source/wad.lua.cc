@@ -20,22 +20,140 @@ DESCRIPTION:
 */
 
 #include <iostream>
+#include <string>
+#include <sstream>
+#include <cstring>
 #include <lua.hpp>
 
 #include "wad.hh"
 #include "wad.lua.hh"
 
+/*open(path)*/
 int libmelkor_lua_open(lua_State *L);
+/*insert(index, name, filepath)*/
+int libmelkor_lua_insert(lua_State *L);
+/*erase(index)*/
+int libmelkor_lua_erase(lua_State *L);
 int libmelkor_lua_debug(lua_State *L);
 
 int libmelkor_lua__constructor(lua_State *L);
 int libmelkor_lua__destructor(lua_State *L);
 
 int libmelkor_lua_open(lua_State *L) {
-    std::cout << "Hello world from !!open!!" << std::endl;
-    libmelkor_lua_debug(L);
+    int type;
+
+    /*Handling errors*/
+    if(lua_gettop(L) != 1+1) {
+        return luaL_error(L, "too fee/many arguments to open(path)");
+    }
+
+    type = lua_type(L, 2);
+    luaL_argcheck(L, type == LUA_TSTRING, 2, "`string' expected");
+
+    const char* path = luaL_checkstring(L, 2);
+
+    (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->open(path);
+
+    /*Remove the last arguments*/
+    lua_settop(L, 1);
+
+    // Update header
+    luaL_getmetatable(L, LIBMELKOR_NAME);
+    lua_pushstring(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_id()); lua_setfield(L, -2, "identification");
+    lua_pushstring(L, path); lua_setfield(L, -2, "path");
+    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total()); lua_setfield(L, -2, "numlumps");
+
+    /*Add metatable to userdata*/
+    lua_setmetatable(L, 1);
 
     return 0;    
+}
+
+int libmelkor_lua_insert(lua_State *L) {
+    uint32_t index;
+    char *name;
+    char *filepath;
+
+    int type;
+
+    /*Handling errors*/
+    if(lua_gettop(L) != 3+1) {
+        return luaL_error(L, "too fee/many arguments to insert(index, name, filepath)");
+    }
+
+    type = lua_type(L, 2);
+    luaL_argcheck(L, type == LUA_TNUMBER, 2, "`number' expected");
+    type = lua_type(L, 3);
+    luaL_argcheck(L, type == LUA_TSTRING, 3, "`string' expected");
+    type = lua_type(L, 4);
+    luaL_argcheck(L, type == LUA_TSTRING, 4, "`string' expected");
+
+    /*Save arguments*/
+    index = (uint32_t) luaL_checkint(L, 2);
+    name = (char*) luaL_checkstring(L, 3);
+    filepath = (char*) luaL_checkstring(L, 4);
+
+    if(!strcmp(filepath, "empty")) {
+        (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->insert(index, name, 0, 0);
+    }
+    else {
+        std::ifstream file(filepath);
+        if(file.is_open()) {
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+
+            void *data = (void*) buffer.str().c_str();
+            size_t size = (size_t) buffer.str().size();
+
+            (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->insert(index, name, data, size);
+        }
+    }
+
+    /*Remove the last arguments*/
+    lua_settop(L, 1);
+
+    // Update userdata
+    luaL_getmetatable(L, LIBMELKOR_NAME);
+
+    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total()); lua_setfield(L, -2, "numlumps");
+
+    /*Add metatable to userdata*/
+    lua_setmetatable(L, 1);
+    
+    return 0;
+}
+
+int libmelkor_lua_erase(lua_State *L) {
+    uint32_t index;
+    
+    int type;
+
+    /*Handling errors*/
+    if(lua_gettop(L) != 1+1) {
+        return luaL_error(L, "too fee/many arguments to erase(index)");
+    }
+
+    type = lua_type(L, 2);
+    luaL_argcheck(L, type == LUA_TNUMBER, 2, "`number' expected");
+
+    /*Save arguments*/
+    index = (uint32_t) luaL_checkint(L, 2);
+
+    /*Remove the last arguments*/
+    lua_settop(L, 1);
+
+    // Update numlumps
+    luaL_getmetatable(L, LIBMELKOR_NAME);
+    if((*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total() != 0) {
+        lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total() - 1); lua_setfield(L, -2, "numlumps");
+    }
+
+    (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->erase(index);
+
+    /*Add metatable to userdata*/
+    lua_setmetatable(L, 1);
+
+    return 0;
 }
 
 int libmelkor_lua_debug(lua_State *L) {
@@ -87,11 +205,13 @@ int libmelkor_lua__constructor(lua_State *L) {
 
     // Add functions
     lua_pushcfunction(L, libmelkor_lua_open); lua_setfield(L, -2, "open");
+    lua_pushcfunction(L, libmelkor_lua_erase); lua_setfield(L, -2, "erase");
+    lua_pushcfunction(L, libmelkor_lua_insert); lua_setfield(L, -2, "insert");
 
     // Add variables
-    lua_pushstring(L, "PWAD"); lua_setfield(L, -2, "id");
+    lua_pushstring(L, "PWAD"); lua_setfield(L, -2, "identification");
     lua_pushstring(L, "nil"); lua_setfield(L, -2, "path");
-    lua_pushinteger(L, 0); lua_setfield(L, -2, "lumps");
+    lua_pushinteger(L, 0); lua_setfield(L, -2, "numlumps");
 
     /*Add metatable to userdata*/
     lua_setmetatable(L, 1);
