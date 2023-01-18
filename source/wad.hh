@@ -41,6 +41,8 @@ public:
     char* get_name(uint32_t index);
     uint32_t get_size(uint32_t index);
 
+    const char* get_path();
+
     void set_id(const char *mode);
     const char* get_id();
 

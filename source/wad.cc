@@ -232,3 +232,7 @@ void wad_c::set_id(const char *mode) {
 const char* wad_c::get_id() {
     return m_header->identification;
 }
+
+const char* wad_c::get_path() {
+    return m_filepath->c_str();
+}

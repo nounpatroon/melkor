@@ -1,5 +1,5 @@
 # melkor
-C/Lua WAD Library
+C++/Lua WAD Library
 
 ## Example
 
@@ -32,10 +32,15 @@ int main(void) {
 
     wad.open("MAP00.WAD");
 
-    wad.insert(0, "_msg0", (void*)msg, strlen(msg)+1);
-    wad.insert(0, "_msg0", (void*)msg, strlen(msg)+1);
-    wad.erase(0);
-    wad.insert(0, "vertexes", (void*)vex, sizeof(vex_st)*4);
+    wad.insert(0, "text0", (void*)msg, strlen(msg));
+    wad.insert(1, "text1", (void*)msg, strlen(msg));
+    wad.erase(1);
+    wad.insert(1, "vertexes", (void*)vex, sizeof(vex_st)*4);
+
+    std::cout <<    "WAD HEADER" << std::endl
+                <<  "Identification: " << wad.get_id() << std::endl 
+                <<  "Path to file:   " << wad.get_path() << std::endl 
+                <<  "Total lumps:    " << wad.get_total() << std::endl;
     return 0;
 }
 
@@ -52,15 +57,18 @@ local wad = Melkor()
 wad:open("MAP00.WAD") -- The library automatically creates the file if it does not exist
 
 --  insert(index, name, file to include)
-wad:insert(0, "entry", "file.txt")
-wad:insert(0, "__hello", "empty") -- use empty to indicate mark
-wad:insert(0, "__hello2", "empty")
-wad:insert(0, "__hello3", "empty") 
-wad:insert(0, "file1", "fileadsfasdf") -- assume that the file does not exist, so it does not include it
-wad:insert(0, "newfile", "file.txt")
+wad:insert(0, "entry", "main.lua")
+wad:insert(1, "__mark1", " ") -- use " " to indicate mark
+wad:insert(2, "__mark2", " ")
+wad:insert(3, "__mark3", " ") 
+wad:insert(4, "elded1", "i_dont_exist.data") -- assume that the file does not exist, so it does not include it
+wad:insert(4, "name2", "main.lua")
 
 --  erase(index to delete)
-wad:erase(2)
+wad:erase(2) -- this will delete __mark2
+
+-- export(index, file to save)
+wad:export(0, "main2.lua")
 
 print("WAD HEADER")
 print("Identification: ", wad.identification)

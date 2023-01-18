@@ -28,12 +28,13 @@ DESCRIPTION:
 
 /*open(path)*/
 int libmelkor_lua_open(lua_State *L);
-/*insert(index, name, filepath)*/
-int libmelkor_lua_insert(lua_State *L);
-/*erase(index)*/
-int libmelkor_lua_erase(lua_State *L);
+/*import(index, name, filepath)*/
+int libmelkor_lua_import(lua_State *L);
+/*remove(index)*/
+int libmelkor_lua_remove(lua_State *L);
 /*export(index, filepath)*/
 int libmelkor_lua_export(lua_State *L);
+
 int libmelkor_lua_debug(lua_State *L);
 
 int libmelkor_lua__constructor(lua_State *L);
@@ -69,7 +70,7 @@ int libmelkor_lua_open(lua_State *L) {
     return 0;    
 }
 
-int libmelkor_lua_insert(lua_State *L) {
+int libmelkor_lua_import(lua_State *L) {
     uint32_t index;
     char *name;
     char *filepath;
@@ -78,7 +79,7 @@ int libmelkor_lua_insert(lua_State *L) {
 
     /*Handling errors*/
     if(lua_gettop(L) != 3+1) {
-        return luaL_error(L, "too fee/many arguments to insert(index, name, filepath)");
+        return luaL_error(L, "too fee/many arguments to import(index, name, filepath)");
     }
 
     type = lua_type(L, 2);
@@ -112,7 +113,7 @@ int libmelkor_lua_insert(lua_State *L) {
                 data[i] = fgetc(file);
             }
 
-            (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->insert(index, name, data, strlen(data)+1);
+            (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->insert(index, name, data, strlen(data));
         }
         else {
             
@@ -134,14 +135,14 @@ int libmelkor_lua_insert(lua_State *L) {
     return 0;
 }
 
-int libmelkor_lua_erase(lua_State *L) {
+int libmelkor_lua_remove(lua_State *L) {
     uint32_t index;
     
     int type;
 
     /*Handling errors*/
     if(lua_gettop(L) != 1+1) {
-        return luaL_error(L, "too fee/many arguments to erase(index)");
+        return luaL_error(L, "too fee/many arguments to remove(index)");
     }
 
     type = lua_type(L, 2);
@@ -196,11 +197,7 @@ int libmelkor_lua_export(lua_State *L) {
     // Get table
     luaL_getmetatable(L, LIBMELKOR_NAME);
 
-    /*
-    Crear el archivo
-    Obtener datos
-    escribir datos
-    */
+    /*Write data*/
     file = fopen(filepath, "wb+");
 
     data = (char*)malloc( (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_size(index) );
@@ -265,8 +262,8 @@ int libmelkor_lua__constructor(lua_State *L) {
 
     // Add functions
     lua_pushcfunction(L, libmelkor_lua_open); lua_setfield(L, -2, "open");
-    lua_pushcfunction(L, libmelkor_lua_erase); lua_setfield(L, -2, "erase");
-    lua_pushcfunction(L, libmelkor_lua_insert); lua_setfield(L, -2, "insert");
+    lua_pushcfunction(L, libmelkor_lua_remove); lua_setfield(L, -2, "remove");
+    lua_pushcfunction(L, libmelkor_lua_import); lua_setfield(L, -2, "import");
     lua_pushcfunction(L, libmelkor_lua_export); lua_setfield(L, -2, "export");
 
     // Add variables
