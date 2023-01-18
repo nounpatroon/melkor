@@ -56,16 +56,16 @@ local wad = Melkor()
 
 wad:open("MAP00.WAD") -- The library automatically creates the file if it does not exist
 
---  insert(index, name, file to include)
-wad:insert(0, "entry", "main.lua")
-wad:insert(1, "__mark1", " ") -- use " " to indicate mark
-wad:insert(2, "__mark2", " ")
-wad:insert(3, "__mark3", " ") 
-wad:insert(4, "elded1", "i_dont_exist.data") -- assume that the file does not exist, so it does not include it
-wad:insert(4, "name2", "main.lua")
+-- import(index, name, file to include)
+wad:import(0, "entry", "main.lua")
+wad:import(1, "__mark1", " ") -- use " " to indicate mark
+wad:import(2, "__mark2", " ")
+wad:import(3, "__mark3", " ") 
+wad:import(4, "elded1", "i_dont_exist.data") -- assume that the file does not exist, so it does not include it
+wad:import(4, "name2", "main.lua")
 
---  erase(index to delete)
-wad:erase(2) -- this will delete __mark2
+-- remove(index to delete)
+wad:remove(2) -- this will delete __mark2
 
 -- export(index, file to save)
 wad:export(0, "main2.lua")
