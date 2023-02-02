@@ -27,58 +27,52 @@ DESCRIPTION:
 #include "wad.hh"
 
 wad_c::wad_c() {
-    m_file = new std::fstream;
-    m_filepath = new std::string;
-    m_header = new wadinfo_t;
-    m_lump = new std::vector<void*>;
-    m_directory = new std::vector<filelump_t>;
+
 }
 
 wad_c::~wad_c() {
-    delete(m_file);
-    delete(m_filepath);
-    delete(m_header);
-    delete(m_directory);
+    for(uint32_t i = 0;i < m_header.numlumps;i++) {
+        free(m_lumps[i]);
+    }
 }
 
 void wad_c::open(const char *path) {
-    m_file->close();
-    m_file->open(path, std::ios::in | std::ios::out | std::ios::binary);
-    m_filepath->assign(path);
+    m_file.close();
+    m_file.open(path, std::ios::in | std::ios::out | std::ios::binary);
+    m_filepath.assign(path);
     
-    if(m_file->fail()) {
+    if(m_file.fail()) {
         fclose(fopen(path, "wb+"));
-        m_file->open(path, std::ios::in | std::ios::out | std::ios::binary);
+        m_file.open(path, std::ios::in | std::ios::out | std::ios::binary);
 
-        snprintf(m_header->identification, 5, "%s", "PWAD");
-        m_header->infotableofs = sizeof(wadinfo_t);
-        m_header->numlumps = 0;
+        snprintf(m_header.identification, 5, "%s", "PWAD");
+        m_header.infotableofs = sizeof(wadinfo_t);
+        m_header.numlumps = 0;
 
-        m_file->write((char*)m_header, sizeof(wadinfo_t));
+        m_file.write((char*)&m_header, sizeof(wadinfo_t));
     }
     else {
         // read header
-        m_file->seekg(0, std::ios::beg);
-        m_file->read((char*)m_header, sizeof(wadinfo_t));
+        m_file.seekg(0, std::ios::beg);
+        m_file.read((char*)&m_header, sizeof(wadinfo_t));
 
         // read directory
-        m_directory->resize(m_header->numlumps);
-        m_file->seekg(m_header->infotableofs, std::ios::beg);
-        for(uint32_t i = 0;i < m_header->numlumps;i++) {
-            m_file->read((char*)&m_directory->at(i), sizeof(filelump_t));
+        m_directorys.resize(m_header.numlumps);
+        m_file.seekg(m_header.infotableofs, std::ios::beg);
+        for(uint32_t i = 0;i < m_header.numlumps;i++) {
+            m_file.read((char*)&m_directorys[i], sizeof(filelump_t));
         }
 
         // read lump
-        m_lump->resize(m_header->numlumps);
-        m_file->seekg(sizeof(wadinfo_t), std::ios::beg);
-        for(uint32_t i = 0;i < m_header->numlumps;i++) {
-            m_lump->at(i) = ::operator new(m_directory->at(i).size);
-
-            m_file->read((char*)m_lump->at(i), m_directory->at(i).size);
+        m_lumps.resize(m_header.numlumps);
+        m_file.seekg(sizeof(wadinfo_t), std::ios::beg);
+        for(uint32_t i = 0;i < m_header.numlumps;i++) {
+            m_lumps[i] = (char*)malloc(m_directorys[i].size);
+            m_file.read((char*)m_lumps[i], m_directorys[i].size);
         }
     }
 
-    m_file->close();
+    m_file.close();
 }
 
 void wad_c::copyfile(const char *from, const char *to) {
@@ -99,40 +93,40 @@ void wad_c::copyfile(const char *from, const char *to) {
     fclose(dest);
 }
 
-uint32_t wad_c::get_total() {
-    return m_header->numlumps;
+uint32_t wad_c::get_numlumps() {
+    return m_header.numlumps;
 }
 
-void* wad_c::get_data(uint32_t index) {
-    if(index >= m_header->numlumps)
+const char* wad_c::get_lump_data(const uint32_t index) {
+    if(index >= m_header.numlumps)
         return NULL;
 
-    return m_lump->at(index);
+    return m_lumps[index];
 }
 
-char* wad_c::get_name(uint32_t index) {
-    if(index >= m_header->numlumps)
+const char* wad_c::get_directory_name(const uint32_t index) {
+    if(index >= m_header.numlumps)
         return NULL;
 
-    return m_directory->at(index).name;
+    return m_directorys[index].name;
 }
 
-uint32_t wad_c::get_size(uint32_t index) {
-    if(index >= m_header->numlumps)
+uint32_t wad_c::get_directory_size(const uint32_t index) {
+    if(index >= m_header.numlumps)
         return 0;
 
-    return m_directory->at(index).size;
+    return m_directorys[index].size;
 }
 
-void wad_c::insert(uint32_t index, const char* name, void *data, size_t size) {
-    if(index > m_header->numlumps)
+void wad_c::insert(const uint32_t index, const char* name, char *data, const size_t size) {
+    if(index > m_header.numlumps)
         return;
-    if(index == m_header->numlumps) {
-        m_directory->resize(m_directory->size()+1);
-        m_lump->resize(m_lump->size()+1);
+    if(index == m_header.numlumps) {
+        m_directorys.resize(m_directorys.size()+1);
+        m_lumps.resize(m_lumps.size()+1);
     }
 
-    m_file->open(m_filepath->c_str(), std::ios::in | std::ios::out | std::ios::binary);
+    m_file.open(m_filepath.c_str(), std::ios::in | std::ios::out | std::ios::binary);
     filelump_t newdirectory;
 
     // add to list
@@ -140,99 +134,102 @@ void wad_c::insert(uint32_t index, const char* name, void *data, size_t size) {
     for(int i = 0;i < 8;i++)
         newdirectory.name[i] = toupper(newdirectory.name[i]);
     newdirectory.size = size;
-    newdirectory.filepos = m_directory->at(index).filepos;
+    newdirectory.filepos = m_directorys[index].filepos;
 
     // add data
-    m_directory->insert(m_directory->begin() + index, newdirectory);
-    m_lump->insert(m_lump->begin() + index, data);
+    m_directorys.insert(m_directorys.begin() + index, newdirectory);
+    m_lumps.insert(m_lumps.begin() + index, data);
+    m_lumps[index] = (char*)malloc(m_directorys[index].size);
+    memcpy(m_lumps[index], data, size);
 
     // write data
-    m_file->seekg(0, std::ios::beg);
-    m_file->write((char*)m_header, sizeof(wadinfo_t));
-    for(uint32_t i = 0;i < (m_header->numlumps+1);i++) {
-        m_directory->at(i).filepos = m_file->tellg();
-        m_file->write((char*)m_lump->at(i), m_directory->at(i).size);
+    m_file.seekg(0, std::ios::beg);
+    m_file.write((char*)&m_header, sizeof(wadinfo_t));
+    for(uint32_t i = 0;i < (m_header.numlumps+1);i++) {
+        m_directorys[i].filepos = m_file.tellg();
+        m_file.write((char*)m_lumps[i], m_directorys[i].size);
     }
     
     // update header
-    m_header->numlumps += 1;
-    m_header->infotableofs = m_file->tellg();
-    m_file->seekg(0, std::ios::beg);
-    m_file->write((char*)m_header, sizeof(wadinfo_t));
+    m_header.numlumps += 1;
+    m_header.infotableofs = m_file.tellg();
+    m_file.seekg(0, std::ios::beg);
+    m_file.write((char*)&m_header, sizeof(wadinfo_t));
 
     // write directory
-    m_file->seekg(m_header->infotableofs, std::ios::beg);
-    for(uint32_t i = 0;i < m_header->numlumps;i++) {
-        m_file->write((char*)&m_directory->at(i), sizeof(filelump_t));
+    m_file.seekg(m_header.infotableofs, std::ios::beg);
+    for(uint32_t i = 0;i < m_header.numlumps;i++) {
+        m_file.write((char*)&m_directorys[i], sizeof(filelump_t));
     }
 
     // end
-    m_file->close();
+    m_file.close();
 }
 
-void wad_c::erase(uint32_t index) {
-    if(index > m_header->numlumps || m_header->numlumps == 0)
+void wad_c::erase(const uint32_t index) {
+    if(index > m_header.numlumps || m_header.numlumps == 0)
         return;
 
-    std::fstream *wadtmpfile = new std::fstream;
+    std::fstream wadtmpfile;
     std::ofstream { ".s4d3dhayuwjsw.tmp" };
 
     // open files
-    wadtmpfile->open(".s4d3dhayuwjsw.tmp", std::ios::in | std::ios::out | std::ios::binary);
+    wadtmpfile.open(".s4d3dhayuwjsw.tmp", std::ios::in | std::ios::out | std::ios::binary);
 
     // delete data
-    m_directory->erase(m_directory->begin() + index);
-    m_lump->erase(m_lump->begin() + index);
+    m_directorys.erase(m_directorys.begin() + index);
+    free(m_lumps[index]);
+    m_lumps.erase(m_lumps.begin() + index);
 
     // write to temporal
-    wadtmpfile->seekg(0, std::ios::beg);
-    wadtmpfile->write((char*)m_header, sizeof(wadinfo_t));
-    for(uint32_t i = 0;i < (m_header->numlumps-1);i++) {
-        m_directory->at(i).filepos = wadtmpfile->tellg();
-        wadtmpfile->write((char*)m_lump->at(i), m_directory->at(i).size);
+    wadtmpfile.seekg(0, std::ios::beg);
+    wadtmpfile.write((char*)&m_header, sizeof(wadinfo_t));
+    for(uint32_t i = 0;i < (m_header.numlumps-1);i++) {
+        m_directorys[i].filepos = wadtmpfile.tellg();
+        wadtmpfile.write((char*)m_lumps[i], m_directorys[i].size);
     }
 
     // update header
-    m_header->numlumps -= 1;
-    m_header->infotableofs = wadtmpfile->tellg();
-    wadtmpfile->seekg(0, std::ios::beg);
-    wadtmpfile->write((char*)m_header, sizeof(wadinfo_t));
+    m_header.numlumps -= 1;
+    m_header.infotableofs = wadtmpfile.tellg();
+    wadtmpfile.seekg(0, std::ios::beg);
+    wadtmpfile.write((char*)&m_header, sizeof(wadinfo_t));
 
     // write directory
-    wadtmpfile->seekg(m_header->infotableofs, std::ios::beg);
-    for(uint32_t i = 0;i < m_header->numlumps;i++) {
-        wadtmpfile->write((char*)&m_directory->at(i), sizeof(filelump_t));
+    wadtmpfile.seekg(m_header.infotableofs, std::ios::beg);
+    for(uint32_t i = 0;i < m_header.numlumps;i++) {
+        wadtmpfile.write((char*)&m_directorys[i], sizeof(filelump_t));
     }
 
     // end
-    wadtmpfile->close();
-    copyfile(".s4d3dhayuwjsw.tmp", m_filepath->c_str());
+    wadtmpfile.close();
+    copyfile(".s4d3dhayuwjsw.tmp", m_filepath.c_str());
     remove(".s4d3dhayuwjsw.tmp");
 }
 
-void wad_c::set_id(const char *mode) {
-    m_file->open(m_filepath->c_str(), std::ios::in | std::ios::out | std::ios::binary);
+void wad_c::set_identification(const char *mode) {
+    m_file.open(m_filepath.c_str(), std::ios::in | std::ios::out | std::ios::binary);
     
     if(!strcmp(mode, "IWAD")) {
-        snprintf(m_header->identification, 5, "%s", "IWAD");
+        snprintf(m_header.identification, 5, "%s", "IWAD");
     }
     else if(!strcmp(mode, "PWAD")) {
-        snprintf(m_header->identification, 5, "%s", "PWAD");
+        snprintf(m_header.identification, 5, "%s", "PWAD");
     }
     else {
         return;
     }
 
-    m_file->seekg(0, std::ios::beg);
-    m_file->write((char*)m_header, sizeof(wadinfo_t));
+    m_file.seekg(0, std::ios::beg);
+    m_file.write((char*)&m_header, sizeof(wadinfo_t));
 
-    m_file->close();
+    m_file.close();
 }
 
-const char* wad_c::get_id() {
-    return m_header->identification;
+const char* wad_c::get_identification() {
+    return m_header.identification;
 }
 
 const char* wad_c::get_path() {
-    return m_filepath->c_str();
+    return m_filepath.c_str();
 }

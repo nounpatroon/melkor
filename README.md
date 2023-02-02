@@ -32,15 +32,16 @@ int main(void) {
 
     wad.open("MAP00.WAD");
 
-    wad.insert(0, "text0", (void*)msg, strlen(msg));
-    wad.insert(1, "text1", (void*)msg, strlen(msg));
+    wad.insert(0, "text0", (char*)msg, strlen(msg));
+    wad.insert(1, "text1", (char*)msg, strlen(msg));
     wad.erase(1);
-    wad.insert(1, "vertexes", (void*)vex, sizeof(vex_st)*4);
+    wad.insert(1, "vertexes", (char*)vex, sizeof(vex_st)*4);
+    wad.insert(2, "__entry", 0, 0);
 
     std::cout <<    "WAD HEADER" << std::endl
-                <<  "Identification: " << wad.get_id() << std::endl 
+                <<  "Identification: " << wad.get_identification() << std::endl 
                 <<  "Path to file:   " << wad.get_path() << std::endl 
-                <<  "Total lumps:    " << wad.get_total() << std::endl;
+                <<  "Total lumps:    " << wad.get_numlumps() << std::endl;
     return 0;
 }
 

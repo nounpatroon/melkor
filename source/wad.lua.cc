@@ -60,9 +60,9 @@ int libmelkor_lua_open(lua_State *L) {
 
     // Update header
     luaL_getmetatable(L, LIBMELKOR_NAME);
-    lua_pushstring(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_id()); lua_setfield(L, -2, "identification");
+    lua_pushstring(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_identification()); lua_setfield(L, -2, "identification");
     lua_pushstring(L, path); lua_setfield(L, -2, "path");
-    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total()); lua_setfield(L, -2, "numlumps");
+    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_numlumps()); lua_setfield(L, -2, "numlumps");
 
     /*Add metatable to userdata*/
     lua_setmetatable(L, 1);
@@ -127,7 +127,7 @@ int libmelkor_lua_import(lua_State *L) {
     // Update userdata
     luaL_getmetatable(L, LIBMELKOR_NAME);
 
-    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total()); lua_setfield(L, -2, "numlumps");
+    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_numlumps()); lua_setfield(L, -2, "numlumps");
 
     /*Add metatable to userdata*/
     lua_setmetatable(L, 1);
@@ -158,7 +158,7 @@ int libmelkor_lua_remove(lua_State *L) {
     luaL_getmetatable(L, LIBMELKOR_NAME);
 
     (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->erase(index);
-    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_total()); lua_setfield(L, -2, "numlumps");
+    lua_pushinteger(L, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_numlumps()); lua_setfield(L, -2, "numlumps");
     
     /*Add metatable to userdata*/
     lua_setmetatable(L, 1);
@@ -200,10 +200,10 @@ int libmelkor_lua_export(lua_State *L) {
     /*Write data*/
     file = fopen(filepath, "wb+");
 
-    data = (char*)malloc( (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_size(index) );
-    data = (char*)(*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_data(index);
+    data = (char*)malloc( (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_directory_size(index) );
+    data = (char*)(*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_lump_data(index);
 
-    fwrite(data, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_size(index), 1, file);
+    fwrite(data, (*reinterpret_cast<wad_c**>(luaL_checkudata(L, 1, LIBMELKOR_NAME)))->get_directory_size(index), 1, file);
 
     /*Add metatable to userdata*/
     lua_setmetatable(L, 1);

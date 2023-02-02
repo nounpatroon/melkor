@@ -36,18 +36,18 @@ public:
 
     void open(const char *path);
 
-    uint32_t get_total();
-    void* get_data(uint32_t index);
-    char* get_name(uint32_t index);
-    uint32_t get_size(uint32_t index);
-
+    uint32_t get_numlumps();
+    const char* get_lump_data(const uint32_t index);
+    const char* get_directory_name(const uint32_t index);
+    uint32_t get_directory_size(const uint32_t index);
     const char* get_path();
+    const char* get_identification();
 
-    void set_id(const char *mode);
-    const char* get_id();
+    void set_identification(const char *mode);
+    
 
-    void insert(uint32_t index, const char* name, void *data, size_t size);
-    void erase(uint32_t index);
+    void insert(const uint32_t index, const char* name, char *data, const size_t size);
+    void erase(const uint32_t index);
 
 private:
     typedef struct {
@@ -64,11 +64,11 @@ private:
 
     void copyfile(const char *from,const char *to);
 
-    std::fstream *m_file;
-    std::string *m_filepath;
-    wadinfo_t *m_header;
-    std::vector<void*> *m_lump;
-    std::vector<filelump_t> *m_directory;
+    std::fstream m_file;
+    std::string m_filepath;
+    wadinfo_t m_header;
+    std::vector<char*> m_lumps;
+    std::vector<filelump_t> m_directorys;
 };
 
 }
