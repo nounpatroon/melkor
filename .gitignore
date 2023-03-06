@@ -12,6 +12,7 @@ build/
 *.WAD
 *.bak
 main.cc
+main.c
 main.lua
 
 # Prerequisites
